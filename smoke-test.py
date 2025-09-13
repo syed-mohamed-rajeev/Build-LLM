@@ -45,43 +45,8 @@ missing = required - set(df.columns)
 assert not missing, f"CSV missing columns: {missing}"
 df.head()
 
-import faiss, numpy as np
 
-# Build chunks
-chunks = [
-    f"Metric: {r.MetricName}\nDefinition: {r.Definition}\nDerivation: {r.Derivation}\nSQL: {r['SQL/SourceTable']}"
-    for r in df.itertuples(index=False)
-]
 
-# Embed corpus
-def embed(text):
-    resp = brt.invoke_model(
-        modelId=EMBED_MODEL,
-        contentType="application/json",
-        accept="application/json",
-        body=json.dumps({"inputText": text}),
-    )
-    return np.array(json.loads(resp["body"].read())["embedding"], dtype="float32")
-
-X = np.vstack([embed(c) for c in chunks]).astype("float32")
-
-# Normalize for cosine
-Xn = X / (np.linalg.norm(X, axis=1, keepdims=True) + 1e-12)
-
-# FAISS index
-dim = Xn.shape[1]
-index = faiss.IndexFlatL2(dim)
-index.add(Xn)
-
-# Test retrieval
-query = "How is LTV calculated?"
-qv = embed(query).astype("float32")
-qv_n = qv / (np.linalg.norm(qv) + 1e-12)
-
-D, I = index.search(qv_n[None, :], k=5)
-sims = (Xn[I[0]] @ qv_n).tolist()  # cosine ≈ since normalized
-for rank, (idx, sim) in enumerate(zip(I[0], sims), start=1):
-    print(f"#{rank} sim≈{sim:.2f}\n{chunks[idx]}\n---")
 
 
 best_idx = I[0][0]
@@ -114,4 +79,48 @@ out = json.loads(resp["body"].read())
 ans = "".join([p.get("text","") for p in out.get("content",[]) if p.get("type")=="text"])
 print(ans)
 
+
+#new no 3 
+import faiss, numpy as np, json
+
+# Build chunks (dict-like row access)
+chunks = [
+    f"Metric: {r['MetricName']}\n"
+    f"Definition: {r['Definition']}\n"
+    f"Derivation: {r['Derivation']}\n"
+    f"SQL: {r['SQL/SourceTable']}"
+    for _, r in df.iterrows()
+]
+
+# Embed function
+def embed(text):
+    resp = brt.invoke_model(
+        modelId=EMBED_MODEL,
+        contentType="application/json",
+        accept="application/json",
+        body=json.dumps({"inputText": text}),
+    )
+    return np.array(json.loads(resp["body"].read())["embedding"], dtype="float32")
+
+# Embed corpus
+X = np.vstack([embed(c) for c in chunks]).astype("float32")
+
+# Normalize for cosine
+Xn = X / (np.linalg.norm(X, axis=1, keepdims=True) + 1e-12)
+
+# FAISS index
+dim = Xn.shape[1]
+index = faiss.IndexFlatL2(dim)
+index.add(Xn)
+
+# Test retrieval
+query = "How is LTV calculated?"
+qv = embed(query).astype("float32")
+qv_n = qv / (np.linalg.norm(qv) + 1e-12)
+
+D, I = index.search(qv_n[None, :], k=5)
+sims = (Xn[I[0]] @ qv_n).tolist()  # cosine since rows are normalized
+
+for rank, (idx, sim) in enumerate(zip(I[0], sims), start=1):
+    print(f"#{rank} sim≈{sim:.2f}\n{chunks[idx]}\n---")
 
