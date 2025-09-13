@@ -73,20 +73,39 @@ DEFAULT_KB = pd.DataFrame([
     }
 ])
 
+# Path to persist latest KB (inside SageMaker home directory)
+SAVE_PATH = "/home/sagemaker-user/mortgage_metrics_kb.csv"
+
 st.subheader("📚 Knowledge Base")
-kb_file = st.file_uploader("Upload CSV (required columns: MetricName, Definition, SQL/SourceTable, Derivation)", type=["csv"])
+
+# --- Option 1: Load automatically from disk if it exists ---
+if os.path.exists(SAVE_PATH):
+    kb_df = pd.read_csv(SAVE_PATH)
+    st.info(f"Loaded KB from {SAVE_PATH}")
+
+# --- Option 2: File uploader overrides ---
+kb_file = st.file_uploader(
+    "Upload CSV (required columns: MetricName, Definition, SQL/SourceTable, Derivation)", 
+    type=["csv"]
+)
 if kb_file:
     kb_df = pd.read_csv(kb_file)
-else:
-    kb_df = DEFAULT_KB.copy()
+    kb_df.to_csv(SAVE_PATH, index=False)   # persist for next run
+    st.success(f"Uploaded KB and saved to {SAVE_PATH}")
 
+# --- Option 3: Fallback to default ---
+if "kb_df" not in locals():
+    kb_df = DEFAULT_KB.copy()
+    st.warning("Using default KB (only 2 sample metrics). Upload a CSV for full KB.")
+
+# --- Validate KB columns ---
 required_cols = {"MetricName","Definition","SQL/SourceTable","Derivation"}
 missing = required_cols - set(kb_df.columns)
 if missing:
     st.error(f"KB is missing columns: {missing}")
     st.stop()
 
-# show sample
+# Show preview
 with st.expander("Preview KB"):
     st.dataframe(kb_df.head(20), use_container_width=True)
 
