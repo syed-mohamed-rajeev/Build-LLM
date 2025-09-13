@@ -1,0 +1,51 @@
+MetricName,Definition,SQL/SourceTable,Derivation
+LTV Ratio,Loan-to-Value ratio = Loan Amount / Appraised Property Value,SELECT loan_amount/appraised_value FROM mortgage_loans,LTV = Loan Amount ÷ Appraised Property Value
+DTI Ratio,Debt-to-Income ratio = Borrower Monthly Debt / Monthly Income,SELECT monthly_debt/monthly_income FROM borrowers,DTI = Borrower Monthly Debt ÷ Borrower Monthly Income
+FICO Score,Credit score of borrower used for risk assessment,SELECT fico_score FROM borrowers,"FICO Score = Bureau-provided score (e.g., FICO)"
+Interest Rate Spread,Difference between loan interest rate and benchmark rate,SELECT interest_rate - treasury_rate FROM mortgage_loans,Spread = Loan Interest Rate − Benchmark Rate
+Delinquency Rate,Percentage of loans past due,SELECT COUNT(*) FILTER(WHERE status='delinquent')/COUNT(*) FROM mortgage_loans,Delinquency Rate = # Delinquent Loans ÷ Total Loans
+Default Rate,Percentage of loans in default,SELECT COUNT(*) FILTER(WHERE status='default')/COUNT(*) FROM mortgage_loans,Default Rate = # Defaulted Loans ÷ Total Loans
+Prepayment Rate,Percentage of loans paid off early,SELECT COUNT(*) FILTER(WHERE prepaid=1)/COUNT(*) FROM mortgage_loans,Prepayment Rate = # Prepaid Loans ÷ Total Loans
+Current Balance,Outstanding loan balance,SELECT current_balance FROM mortgage_loans,Current Balance = Remaining Principal at Reporting Date
+Original Balance,Original balance of the loan at origination,SELECT original_balance FROM mortgage_loans,Original Balance = Principal at Origination
+Loss Given Default,Expected % loss if loan defaults,SELECT lgd FROM risk_models,LGD = (Defaulted Balance − Recovery) ÷ Defaulted Balance
+Probability of Default,Estimated probability loan will default,SELECT pd FROM risk_models,PD = Model-estimated probability of default
+Exposure at Default,Total value exposed at time of default,SELECT ead FROM risk_models,EAD = Expected Balance Outstanding at Default
+Capital Adequacy Ratio,Bank’s capital to risk-weighted assets,SELECT capital/rwa FROM financials,CAR = Total Capital ÷ Risk-Weighted Assets
+Weighted Avg Coupon,Weighted average coupon across pool,SELECT SUM(balance*coupon)/SUM(balance) FROM mortgage_pool,WAC = Σ(balance × coupon) ÷ Σ(balance)
+Weighted Avg Maturity,Average maturity weighted by balance,SELECT SUM(balance*maturity)/SUM(balance) FROM mortgage_pool,WAM = Σ(balance × maturity) ÷ Σ(balance)
+Unpaid Principal Balance,Sum of outstanding principal,SELECT SUM(current_balance) FROM mortgage_loans,UPB = Σ(Current Principal Balances)
+Servicing Fee,Fee charged for servicing the mortgage,SELECT servicing_fee FROM servicing_data,Servicing Fee = Fee per Loan × Loan Count (or % of balance)
+Foreclosure Rate,Rate of loans entering foreclosure,SELECT COUNT(*) FILTER(WHERE status='foreclosure')/COUNT(*) FROM mortgage_loans,Foreclosure Rate = # Loans in Foreclosure ÷ Total Loans
+Recovery Rate,Percentage of funds recovered after default,SELECT recovered_amount/defaulted_amount FROM recovery_data,Recovery Rate = Recovery ÷ Defaulted Amount
+Net Charge-Off Rate,Net losses as % of loans outstanding,SELECT charge_offs/outstanding_loans FROM financials,Net Charge-Off Rate = Net Charge-Offs ÷ Average Outstanding Loans
+Loan Age,Number of months since origination,"SELECT DATEDIFF(month, origination_date, CURRENT_DATE) FROM mortgage_loans",Loan Age = Months between Current Date and Origination Date
+Seasoning,Time loan has been outstanding,SELECT months_on_book FROM mortgage_loans,Seasoning = Months Since Origination
+Coupon Rate,Nominal interest rate stated on loan,SELECT coupon_rate FROM mortgage_loans,Coupon Rate = Stated Interest Rate
+Delinquency Transition Rate,Probability of loan moving from current to delinquent,SELECT ...,Transition Rate = P(Current → Delinquent) from transition matrix
+Modification Rate,Percentage of loans modified,SELECT COUNT(*) FILTER(WHERE modified=1)/COUNT(*) FROM mortgage_loans,Modification Rate = # Modified Loans ÷ Total Loans
+Refinance Rate,Percentage of loans refinanced,SELECT COUNT(*) FILTER(WHERE refinanced=1)/COUNT(*) FROM mortgage_loans,Refinance Rate = # Refinanced Loans ÷ Total Loans
+Origination Volume,Total loan volume originated,SELECT SUM(original_balance) FROM mortgage_loans WHERE origination_date BETWEEN ...,Origination Volume = Σ(Original Balances) over period
+Loan Purpose Mix,Distribution of purchase vs refinance,"SELECT purpose, COUNT(*) FROM mortgage_loans GROUP BY purpose",Loan Purpose Mix = Count by Purpose ÷ Total Loans
+Borrower Income,Borrower’s reported income,SELECT monthly_income FROM borrowers,Borrower Income = Reported Monthly Income
+Borrower Employment Length,Years of borrower employment,SELECT employment_years FROM borrowers,Employment Length = Years Employed (from application)
+Property Type Distribution,Mix of property types financed,"SELECT property_type, COUNT(*) FROM mortgage_loans GROUP BY property_type",Property Mix = Count by Property Type ÷ Total Loans
+Region Risk Concentration,Exposure by geographic region,"SELECT region, SUM(balance) FROM mortgage_loans GROUP BY region",Region Risk = Balance by Region ÷ Total Balance
+Vintage Performance,Performance of loans by origination year,"SELECT origination_year, SUM(defaults) FROM mortgage_loans GROUP BY origination_year",Vintage Performance = Defaults/Performance by Origination Year
+Servicer Performance,Delinquency by servicer,"SELECT servicer, SUM(delinquent) FROM mortgage_loans GROUP BY servicer",Servicer Performance = Delinquency/Defaults grouped by Servicer
+Mortgage Insurance Coverage,Extent of mortgage insurance coverage,SELECT mi_coverage FROM insurance_data,MI Coverage = % of Loan Covered by Insurance
+Loan Margin,Interest margin of loan,SELECT loan_rate - funding_cost FROM mortgage_loans,Loan Margin = Loan Rate − Funding Cost
+Spread at Origination,Rate spread at loan origination,SELECT origination_rate - benchmark_rate FROM mortgage_loans,Spread at Origination = Origination Rate − Benchmark Rate
+Duration,Interest rate sensitivity measure,SELECT duration FROM risk_models,Duration = Weighted Average Timing of Discounted Cashflows
+Convexity,Second derivative of duration,SELECT convexity FROM risk_models,Convexity = Rate of Change of Duration wrt Yield
+Stress Loss,Loss under stressed scenario,SELECT stress_loss FROM stress_tests,Stress Loss = Expected Loss under Adverse Scenario
+Scenario PD,Probability of default under scenario,SELECT scenario_pd FROM stress_tests,Scenario PD = PD under Scenario Assumptions
+Scenario LGD,LGD under stressed scenario,SELECT scenario_lgd FROM stress_tests,Scenario LGD = LGD under Scenario Assumptions
+Liquidity Coverage Ratio,Liquidity to cover obligations,SELECT hqla/net_outflows FROM liquidity_data,LCR = High-Quality Liquid Assets ÷ Net Outflows (30 days)
+Net Stable Funding Ratio,Stable funding available vs required,SELECT stable_funding/required_funding FROM liquidity_data,NSFR = Available Stable Funding ÷ Required Stable Funding
+OAS,Option-adjusted spread of mortgage pool,SELECT oas FROM risk_models,OAS = Spread Adjusted for Embedded Options
+Servicer Advance Rate,Rate at which servicer advances payments,SELECT advance_rate FROM servicing_data,Advance Rate = Advances ÷ Payment Shortfalls
+Guarantee Fee,Fee for GSE guarantee,SELECT g_fee FROM gse_data,Guarantee Fee = Fee Charged by Guarantor (GSE)
+Pooling Factor,Fraction of original principal still outstanding,SELECT current_balance/original_balance FROM mortgage_pool,Pooling Factor = Current Balance ÷ Original Balance
+Cumulative Default Rate,Total defaults since origination,SELECT SUM(defaults)/COUNT(*) FROM mortgage_loans,Cumulative Default Rate = Total Defaults ÷ Total Loans
+Serious Delinquency Rate,Loans 90+ days past due,SELECT COUNT(*) FILTER(WHERE days_past_due>90)/COUNT(*) FROM mortgage_loans,Serious Delinquency Rate = Loans >90 Days Past Due ÷ Total Loans
