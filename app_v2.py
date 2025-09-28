@@ -1,9 +1,3 @@
-# app_fullkb_bedrock_identifiers_clean.py
-# Enterprise Risk Analytics Desk - TraceGenie
-# Full-KB-to-LLM (Bedrock Inference Profile + PII pre-check)
-# - Metric questions: answer + (optional) expanders + lineage
-# - Identifier-only questions (Interface ID / IAG Roles): answer only (no expanders, no lineage)
-# - White UI, blue assistant bubble, dark-node lineage on white canvas
 
 from __future__ import annotations
 import json, uuid, re
